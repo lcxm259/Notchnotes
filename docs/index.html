@@ -1,0 +1,1521 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="NotchNotes is a dark Markdown note app that lives inside the MacBook notch.">
+  <title>NotchNotes</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --page: #08090b;
+      --ink: #f5f5f6;
+      --muted: rgba(245, 245, 246, 0.64);
+      --quiet: rgba(245, 245, 246, 0.42);
+      --panel: #050506;
+      --editor: #0f1014;
+      --toolbar: #121319;
+      --line: rgba(255, 255, 255, 0.07);
+      --soft: rgba(255, 255, 255, 0.075);
+      --blue: #9bb8ff;
+      --green: #b0eccf;
+      --pink: #ffa7cc;
+      --shadow: 0 42px 130px rgba(0, 0, 0, 0.62);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--page);
+      color: var(--ink);
+    }
+
+    body {
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .page {
+      position: relative;
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      overflow: hidden;
+      isolation: isolate;
+      background:
+        radial-gradient(circle at 50% -18%, rgba(155, 184, 255, 0.30), transparent 34%),
+        radial-gradient(circle at 72% 26%, rgba(176, 236, 207, 0.11), transparent 24%),
+        radial-gradient(circle at 22% 70%, rgba(255, 167, 204, 0.10), transparent 26%),
+        linear-gradient(180deg, #0d0e13 0%, #08090b 54%, #06070a 100%);
+    }
+
+    .page::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+      background-image:
+        linear-gradient(115deg, transparent 0 48%, rgba(255, 255, 255, 0.032) 49% 51%, transparent 52%),
+        radial-gradient(circle at center, rgba(255, 255, 255, 0.055) 0 0.55px, transparent 0.65px);
+      background-size: 92px 92px, 4px 4px;
+      opacity: 0.46;
+      mask-image: linear-gradient(to bottom, transparent 0%, black 16%, black 78%, transparent 100%);
+    }
+
+    .page::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: -36vh;
+      width: 76vw;
+      height: 48vh;
+      z-index: -1;
+      transform: translateX(-50%);
+      background:
+        radial-gradient(ellipse at center, rgba(255, 255, 255, 0.16), rgba(155, 184, 255, 0.10) 34%, transparent 70%);
+      filter: blur(18px);
+    }
+
+    .nav {
+      height: 58px;
+      width: min(1120px, calc(100vw - 36px));
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 13px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: rgba(255, 255, 255, 0.92);
+      font-weight: 720;
+    }
+
+    .brand img {
+      width: 24px;
+      height: 24px;
+      border-radius: 7px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-link {
+      min-height: 32px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0 10px;
+      border-radius: 8px;
+      transition: background 150ms ease, color 150ms ease;
+    }
+
+    .nav-link svg {
+      width: 14px;
+      height: 14px;
+      flex: 0 0 auto;
+    }
+
+    .nav-link:hover {
+      background: rgba(255, 255, 255, 0.07);
+      color: rgba(255, 255, 255, 0.96);
+    }
+
+    .hero {
+      width: min(1040px, calc(100vw - 36px));
+      margin: 0 auto;
+      padding: 10px 0 34px;
+      display: flex;
+      min-height: calc(100vh - 58px);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 28px;
+      padding: 0 11px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.058);
+      color: rgba(255, 255, 255, 0.68);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      font-size: 12px;
+      font-weight: 680;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 18px rgba(158, 231, 193, 0.74);
+    }
+
+    h1 {
+      max-width: 720px;
+      margin: 16px auto 0;
+      font-size: clamp(36px, 5vw, 58px);
+      line-height: 1.02;
+      letter-spacing: 0;
+      font-weight: 760;
+    }
+
+    .subhead {
+      max-width: 640px;
+      margin: 14px auto 0;
+      color: rgba(245, 245, 246, 0.60);
+      font-size: clamp(14px, 1.52vw, 17px);
+      line-height: 1.64;
+      font-weight: 450;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 22px;
+      flex-wrap: wrap;
+    }
+
+    .button {
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      padding: 0 17px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 720;
+      position: relative;
+      overflow: hidden;
+      transition: transform 160ms ease, background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .button svg {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 auto;
+    }
+
+    .button > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .button.primary {
+      color: #090a0d;
+      background:
+        linear-gradient(180deg, #ffffff, #e9e9ec);
+      box-shadow:
+        0 12px 30px rgba(255, 255, 255, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+
+    .button.primary::after {
+      content: "";
+      position: absolute;
+      inset: 1px 1px auto;
+      height: 48%;
+      border-radius: 7px 7px 12px 12px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.74), transparent);
+      pointer-events: none;
+      opacity: 0.72;
+    }
+
+    .button.secondary {
+      color: rgba(255, 255, 255, 0.78);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.090), rgba(255, 255, 255, 0.055));
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        0 10px 26px rgba(0, 0, 0, 0.16);
+    }
+
+    .button:hover {
+      transform: translateY(-1px);
+    }
+
+    .install-note {
+      margin: 10px 0 0;
+      color: rgba(245, 245, 246, 0.42);
+      font-size: 12px;
+      font-weight: 620;
+    }
+
+    .device {
+      position: relative;
+      width: min(860px, 100%);
+      margin-top: clamp(20px, 3.2vh, 32px);
+      padding-bottom: 20px;
+    }
+
+    .device::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: -18px;
+      width: 78%;
+      height: 58px;
+      transform: translateX(-50%);
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(155, 184, 255, 0.20), transparent 68%);
+      filter: blur(20px);
+      pointer-events: none;
+    }
+
+    .screen {
+      position: relative;
+      aspect-ratio: 16 / 10;
+      height: auto;
+      min-height: 0;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 26px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.035)),
+        #11131a;
+      box-shadow:
+        var(--shadow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+      overflow: hidden;
+    }
+
+    .screen::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 6px solid #050507;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    .screen::after {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border-radius: 20px;
+      pointer-events: none;
+      background:
+        linear-gradient(118deg, rgba(255, 255, 255, 0.16), transparent 31%),
+        linear-gradient(20deg, transparent 50%, rgba(255, 255, 255, 0.055) 80%, transparent 100%),
+        radial-gradient(circle at 74% 9%, rgba(255, 255, 255, 0.12), transparent 20%);
+      mix-blend-mode: screen;
+      opacity: 0.58;
+      z-index: 3;
+    }
+
+    .base {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      width: 112%;
+      height: 22px;
+      transform: translateX(-50%);
+      border-radius: 0 0 26px 26px;
+      background:
+        linear-gradient(180deg, #ececf0, #9ca0aa 62%, #555a65);
+      box-shadow: 0 24px 54px rgba(0, 0, 0, 0.42);
+    }
+
+    .base::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 150px;
+      height: 9px;
+      transform: translateX(-50%);
+      border-radius: 0 0 14px 14px;
+      background: rgba(0, 0, 0, 0.22);
+    }
+
+    .desktop {
+      position: absolute;
+      inset: 6px;
+      border-radius: 20px;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.060) 0 34px, transparent 34px),
+        radial-gradient(circle at 20% 18%, rgba(155, 184, 255, 0.18), transparent 26%),
+        radial-gradient(circle at 80% 72%, rgba(255, 167, 204, 0.11), transparent 24%),
+        #171923;
+    }
+
+    .mock-app {
+      position: absolute;
+      left: 38px;
+      right: 38px;
+      top: 58px;
+      bottom: 42px;
+      display: grid;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.105);
+      border-radius: 18px;
+      color: rgba(255, 255, 255, 0.78);
+      text-align: left;
+      opacity: 0;
+      transform: translateY(10px) scale(0.988);
+      transition: opacity 420ms ease, transform 520ms cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow:
+        0 24px 70px rgba(0, 0, 0, 0.26),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .screen[data-scene="todo"] .app-todo,
+    .screen[data-scene="life"] .app-life,
+    .screen[data-scene="ideas"] .app-ideas {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .app-todo {
+      grid-template-columns: 140px 1fr;
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.080) 0 140px, transparent 140px),
+        linear-gradient(135deg, rgba(155, 184, 255, 0.18), rgba(176, 236, 207, 0.08)),
+        #161924;
+    }
+
+    .app-life {
+      grid-template-columns: 1fr 168px;
+      background:
+        radial-gradient(circle at 82% 18%, rgba(255, 205, 126, 0.22), transparent 28%),
+        linear-gradient(135deg, rgba(255, 167, 204, 0.16), rgba(176, 236, 207, 0.10)),
+        #171821;
+    }
+
+    .app-ideas {
+      grid-template-columns: 1fr;
+      background:
+        radial-gradient(circle at 18% 22%, rgba(155, 184, 255, 0.24), transparent 30%),
+        radial-gradient(circle at 80% 76%, rgba(255, 167, 204, 0.16), transparent 30%),
+        #151722;
+    }
+
+    .mock-side,
+    .mock-pane,
+    .mock-right {
+      min-width: 0;
+    }
+
+    .mock-side {
+      padding: 18px 14px;
+      background: rgba(0, 0, 0, 0.18);
+      border-right: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .mock-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 18px;
+      color: rgba(255, 255, 255, 0.88);
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .mock-brand::before {
+      content: "";
+      width: 18px;
+      height: 18px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, var(--blue), var(--green));
+      box-shadow: 0 10px 22px rgba(155, 184, 255, 0.28);
+    }
+
+    .mock-nav-item {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+      padding: 0 9px;
+      border-radius: 8px;
+      color: rgba(255, 255, 255, 0.52);
+      font-size: 11px;
+      font-weight: 650;
+    }
+
+    .mock-nav-item.active {
+      color: rgba(255, 255, 255, 0.92);
+      background: rgba(255, 255, 255, 0.09);
+    }
+
+    .mock-pane {
+      padding: 18px;
+    }
+
+    .mock-title {
+      margin: 0 0 14px;
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 16px;
+      font-weight: 780;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .board-column {
+      min-height: 224px;
+      padding: 10px;
+      border-radius: 13px;
+      background: rgba(0, 0, 0, 0.14);
+    }
+
+    .column-title {
+      margin-bottom: 10px;
+      color: rgba(255, 255, 255, 0.46);
+      font-size: 10px;
+      font-weight: 760;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .task-card {
+      min-height: 52px;
+      margin-top: 8px;
+      padding: 10px;
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.082);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    }
+
+    .task-card strong {
+      display: block;
+      color: rgba(255, 255, 255, 0.86);
+      font-size: 11px;
+      line-height: 1.25;
+    }
+
+    .task-card span {
+      display: block;
+      margin-top: 5px;
+      color: rgba(255, 255, 255, 0.43);
+      font-size: 10px;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .calendar-day {
+      min-height: 78px;
+      padding: 8px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.07);
+      color: rgba(255, 255, 255, 0.48);
+      font-size: 10px;
+      font-weight: 720;
+    }
+
+    .calendar-day.active {
+      color: rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.13);
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18);
+    }
+
+    .calendar-pill {
+      display: block;
+      margin-top: 8px;
+      padding: 6px 7px;
+      border-radius: 8px;
+      color: rgba(12, 13, 18, 0.88);
+      background: rgba(176, 236, 207, 0.86);
+      font-size: 10px;
+      line-height: 1.2;
+    }
+
+    .mock-right {
+      padding: 18px 16px;
+      border-left: 1px solid rgba(255, 255, 255, 0.07);
+      background: rgba(0, 0, 0, 0.14);
+    }
+
+    .life-card {
+      padding: 12px;
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.68);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .gallery-toolbar {
+      height: 42px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 14px;
+      background: rgba(0, 0, 0, 0.18);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .search-field {
+      flex: 1;
+      height: 24px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.10);
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr 0.9fr;
+      gap: 10px;
+      padding: 16px;
+    }
+
+    .idea-tile {
+      min-height: 92px;
+      border-radius: 14px;
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06)),
+        rgba(255, 255, 255, 0.06);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+    }
+
+    .idea-tile.large {
+      grid-row: span 2;
+      min-height: 194px;
+      background:
+        linear-gradient(145deg, rgba(176, 236, 207, 0.34), rgba(155, 184, 255, 0.16)),
+        rgba(255, 255, 255, 0.08);
+    }
+
+    .idea-tile.pink {
+      background:
+        linear-gradient(145deg, rgba(255, 167, 204, 0.30), rgba(255, 255, 255, 0.06)),
+        rgba(255, 255, 255, 0.08);
+    }
+
+    .idea-tile.blue {
+      background:
+        linear-gradient(145deg, rgba(155, 184, 255, 0.30), rgba(255, 255, 255, 0.06)),
+        rgba(255, 255, 255, 0.08);
+    }
+
+    .mock-window-bar {
+      width: 42px;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    .demo-cursor {
+      position: absolute;
+      left: var(--cursor-x, 72%);
+      top: var(--cursor-y, 72%);
+      z-index: 35;
+      width: 24px;
+      height: 24px;
+      color: rgba(255, 255, 255, 0.96);
+      filter: drop-shadow(0 9px 12px rgba(0, 0, 0, 0.55));
+      pointer-events: none;
+      transform: translate(-5px, -3px);
+      transition:
+        left 760ms cubic-bezier(0.16, 1, 0.3, 1),
+        top 760ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .demo-cursor svg {
+      width: 24px;
+      height: 24px;
+      display: block;
+    }
+
+    .demo-cursor::after {
+      content: "";
+      position: absolute;
+      left: -4px;
+      top: -6px;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.62);
+      opacity: 0;
+      transform: scale(0.62);
+    }
+
+    .screen.cursor-click .demo-cursor::after {
+      animation: cursorPulse 620ms ease;
+    }
+
+    .screen.cursor-rest {
+      --cursor-x: 78%;
+      --cursor-y: 72%;
+    }
+
+    .screen.cursor-notch {
+      --cursor-x: 50%;
+      --cursor-y: 17px;
+    }
+
+    .screen.cursor-tab-0 {
+      --cursor-x: calc(50% - 197px);
+      --cursor-y: 61px;
+    }
+
+    .screen.cursor-tab-1 {
+      --cursor-x: calc(50% - 165px);
+      --cursor-y: 61px;
+    }
+
+    .screen.cursor-tab-2 {
+      --cursor-x: calc(50% - 133px);
+      --cursor-y: 61px;
+    }
+
+    .screen.cursor-editor {
+      --cursor-x: calc(50% - 156px);
+      --cursor-y: 158px;
+    }
+
+    @keyframes cursorPulse {
+      0% {
+        opacity: 0;
+        transform: scale(0.55);
+      }
+
+      42% {
+        opacity: 0.75;
+      }
+
+      100% {
+        opacity: 0;
+        transform: scale(1.85);
+      }
+    }
+
+    .icon {
+      width: 15px;
+      height: 15px;
+      display: block;
+      stroke-width: 2.2;
+    }
+
+    .menu-line {
+      position: absolute;
+      inset: 0 0 auto;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.045);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+    }
+
+    .menu-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mini-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: rgba(255, 255, 255, 0.86);
+      font-weight: 720;
+    }
+
+    .mini-brand img {
+      width: 16px;
+      height: 16px;
+      border-radius: 5px;
+    }
+
+    .notch-stage {
+      position: absolute;
+      left: 50%;
+      top: 6px;
+      z-index: 15;
+      transform: translateX(-50%);
+      width: 118px;
+      height: 22px;
+      border-radius: 0 0 10px 10px;
+      background: #000;
+      cursor: pointer;
+      transition:
+        width 560ms cubic-bezier(0.16, 1, 0.3, 1),
+        height 560ms cubic-bezier(0.16, 1, 0.3, 1),
+        border-radius 560ms cubic-bezier(0.16, 1, 0.3, 1),
+        box-shadow 260ms ease;
+    }
+
+    .screen.is-open .notch-stage,
+    .notch-stage:hover,
+    .notch-stage:focus-within {
+      width: min(520px, calc(100% - 120px));
+      height: min(360px, calc(100% - 86px));
+      border-radius: 0 0 20px 20px;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.52);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent),
+        #050506;
+    }
+
+    .panel {
+      position: absolute;
+      inset: 0;
+      padding: 42px 18px 18px;
+      opacity: 0;
+      transform: translateY(-6px);
+      pointer-events: none;
+      transition: opacity 260ms ease 160ms, transform 280ms ease 140ms;
+    }
+
+    .screen.is-open .panel,
+    .notch-stage:hover .panel,
+    .notch-stage:focus-within .panel {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .top-tools {
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .pager,
+    .icon-actions,
+    .md-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pager {
+      height: 26px;
+      padding: 0 2px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.045);
+    }
+
+    .tool-button {
+      width: 26px;
+      height: 26px;
+      display: grid;
+      place-items: center;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.68);
+      cursor: pointer;
+      transition: background 140ms ease, color 140ms ease, transform 140ms ease;
+    }
+
+    .tool-button:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.94);
+    }
+
+    .tool-button:active {
+      transform: translateY(1px);
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .dot {
+      width: 26px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .dot::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.34);
+      transition: width 260ms cubic-bezier(0.16, 1, 0.3, 1), background 160ms ease;
+    }
+
+    .dot.active::before {
+      width: 20px;
+      background: rgba(255, 255, 255, 0.82);
+    }
+
+    .editor-card {
+      height: calc(100% - 38px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--editor);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+    }
+
+    .note-body {
+      flex: 1;
+      padding: 18px;
+      color: rgba(255, 255, 255, 0.9);
+      text-align: left;
+      font-size: 15px;
+      line-height: 1.58;
+      outline: none;
+      caret-color: #fff;
+    }
+
+    .note-body h2 {
+      margin: 0 0 12px;
+      font-size: 19px;
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+
+    .note-body p {
+      margin: 10px 0 0;
+      color: rgba(255, 255, 255, 0.68);
+      font-size: 13px;
+    }
+
+    .note-body ol,
+    .note-body ul {
+      margin: 0;
+      padding-left: 23px;
+    }
+
+    .note-body li + li {
+      margin-top: 7px;
+    }
+
+    .typing-line {
+      color: rgba(255, 255, 255, 0.92);
+    }
+
+    .typing-text::after {
+      content: "";
+      display: inline-block;
+      width: 2px;
+      height: 1em;
+      margin-left: 2px;
+      vertical-align: -0.16em;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.86);
+      animation: caretBlink 1s steps(2, start) infinite;
+    }
+
+    @keyframes caretBlink {
+      50% {
+        opacity: 0;
+      }
+    }
+
+    .check-list {
+      padding-left: 0 !important;
+      list-style: none;
+    }
+
+    .check-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .checkmark {
+      width: 15px;
+      height: 15px;
+      flex: 0 0 auto;
+      margin-top: 4px;
+      display: grid;
+      place-items: center;
+      border-radius: 5px;
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .checkmark.done {
+      border-color: transparent;
+      background: var(--green);
+      box-shadow: 0 0 18px rgba(176, 236, 207, 0.24);
+    }
+
+    .checkmark.done::before {
+      content: "";
+      width: 10px;
+      height: 8px;
+      background: #111315;
+      -webkit-mask: url("data:image/svg+xml,%3Csvg viewBox='0 0 10 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='black' d='M3.55 7.15.55 4.15l1.2-1.2 1.8 1.8L8.25.05l1.2 1.2-5.9 5.9Z'/%3E%3C/svg%3E") center / contain no-repeat;
+      mask: url("data:image/svg+xml,%3Csvg viewBox='0 0 10 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='black' d='M3.55 7.15.55 4.15l1.2-1.2 1.8 1.8L8.25.05l1.2 1.2-5.9 5.9Z'/%3E%3C/svg%3E") center / contain no-repeat;
+    }
+
+    .toolbar-row {
+      height: 32px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 0 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.045);
+      background: var(--toolbar);
+    }
+
+    .md-toolbar .tool-button {
+      width: 24px;
+      height: 22px;
+      font-size: 11px;
+      font-weight: 760;
+      color: rgba(255, 255, 255, 0.62);
+    }
+
+    .credit-link {
+      margin-left: auto;
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 8px;
+      border-radius: 7px;
+      color: rgba(255, 255, 255, 0.56);
+      font-size: 12px;
+      font-weight: 720;
+      white-space: nowrap;
+      transition: background 140ms ease, color 140ms ease;
+    }
+
+    .credit-link:hover {
+      color: rgba(255, 255, 255, 0.92);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .caption {
+      margin-top: 14px;
+      color: var(--quiet);
+      font-size: 13px;
+      font-weight: 640;
+    }
+
+    @media (max-height: 760px) {
+      .nav {
+        height: 48px;
+      }
+
+      .hero {
+        min-height: calc(100vh - 48px);
+        padding-bottom: 22px;
+      }
+
+      h1 {
+        font-size: clamp(34px, 5vw, 52px);
+      }
+
+      .subhead {
+        max-width: 620px;
+        line-height: 1.55;
+      }
+
+      .device {
+        width: min(760px, 100%);
+        margin-top: 20px;
+      }
+
+      .screen {
+        height: auto;
+        min-height: 0;
+      }
+    }
+
+    @media (max-width: 760px) {
+      body {
+        overflow: auto;
+      }
+
+      .page {
+        min-height: auto;
+      }
+
+      .nav {
+        width: min(100vw - 24px, 1120px);
+      }
+
+      .nav-links .nav-link:first-child {
+        display: none;
+      }
+
+      .hero {
+        min-height: auto;
+        width: min(100vw - 24px, 1040px);
+        padding: 44px 0 42px;
+      }
+
+      .screen {
+        aspect-ratio: auto;
+        height: 500px;
+        min-height: 500px;
+      }
+
+      .screen.is-open .notch-stage,
+      .notch-stage:hover,
+      .notch-stage:focus-within {
+        width: calc(100% - 24px);
+      }
+
+      .mock-app {
+        left: 18px;
+        right: 18px;
+        top: 54px;
+        bottom: 38px;
+      }
+
+      .app-todo,
+      .app-life {
+        grid-template-columns: 1fr;
+      }
+
+      .mock-side,
+      .mock-right {
+        display: none;
+      }
+
+      .board {
+        grid-template-columns: 1fr;
+      }
+
+      .board-column:nth-child(n+3),
+      .calendar-day:nth-child(n+4) {
+        display: none;
+      }
+
+      .panel {
+        padding: 50px 14px 14px;
+      }
+
+      .note-body {
+        padding: 18px 16px;
+        font-size: 15px;
+      }
+
+      .md-toolbar .tool-button:nth-child(n+7) {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <nav class="nav" aria-label="Top navigation">
+      <a class="brand" href="#">
+        <img src="assets/app-icon.png" alt="">
+        <span>NotchNotes</span>
+      </a>
+      <div class="nav-links">
+        <a class="nav-link" href="#demo">Demo</a>
+        <a class="nav-link" href="https://github.com/oil-oil" target="_blank" rel="noreferrer">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.21 11.39.6.11.82-.26.82-.58 0-.29-.01-1.04-.02-2.04-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.33-1.76-1.33-1.76-1.09-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.49.99.11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.44 11.44 0 0 1 6 0c2.29-1.55 3.3-1.23 3.3-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.49 5.93.43.37.81 1.1.81 2.22 0 1.6-.02 2.89-.02 3.29 0 .32.22.7.83.58A12.01 12.01 0 0 0 24 12c0-6.63-5.37-12-12-12Z"/>
+          </svg>
+          <span>GitHub</span>
+        </a>
+      </div>
+    </nav>
+
+    <section class="hero" aria-label="NotchNotes landing page hero">
+      <div class="eyebrow">Notes, tucked into the notch</div>
+      <h1>Quick notes, right where your eyes already are.</h1>
+      <p class="subhead">A small dark Markdown pad that unfolds from the MacBook notch for thoughts, tasks, links, and screenshots.</p>
+
+      <div class="actions">
+        <a class="button primary" href="NotchNotes.zip" download>
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.33-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.29-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.26-2.15 3.81.03 3.05 2.68 4.06 2.71 4.07-.03.07-.43 1.44-1.41 2.8ZM13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.36 1.05-3.11Z"/>
+          </svg>
+          <span>Download for macOS</span>
+        </a>
+        <a class="button secondary" href="https://github.com/oil-oil" target="_blank" rel="noreferrer">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.21 11.39.6.11.82-.26.82-.58 0-.29-.01-1.04-.02-2.04-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.33-1.76-1.33-1.76-1.09-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.49.99.11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.44 11.44 0 0 1 6 0c2.29-1.55 3.3-1.23 3.3-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.49 5.93.43.37.81 1.1.81 2.22 0 1.6-.02 2.89-.02 3.29 0 .32.22.7.83.58A12.01 12.01 0 0 0 24 12c0-6.63-5.37-12-12-12Z"/>
+          </svg>
+          <span>GitHub</span>
+        </a>
+      </div>
+      <p class="install-note">Download ZIP · unzip · move to Applications · first launch: right-click Open.</p>
+
+      <section class="device" id="demo" aria-label="NotchNotes automatic notch demo">
+        <div class="screen cursor-rest" id="demoScreen" data-scene="todo">
+          <div class="desktop" aria-hidden="true">
+            <div class="menu-line">
+              <div class="menu-group">
+                <span class="mini-brand">
+                  <img src="assets/app-icon.png" alt="">
+                  <span>NotchNotes</span>
+                </span>
+                <span>Edit</span>
+                <span>Window</span>
+              </div>
+              <div class="menu-group">
+                <span id="clock">9:41</span>
+              </div>
+            </div>
+            <div class="mock-app app-todo">
+              <aside class="mock-side">
+                <div class="mock-brand">MuseOn</div>
+                <div class="mock-nav-item active">Launch</div>
+                <div class="mock-nav-item">Design</div>
+                <div class="mock-nav-item">Issues</div>
+                <div class="mock-nav-item">Backlog</div>
+              </aside>
+              <section class="mock-pane">
+                <h3 class="mock-title">Launch board</h3>
+                <div class="board">
+                  <div class="board-column">
+                    <div class="column-title">Today</div>
+                    <div class="task-card"><strong>Fix notch trigger</strong><span>Interaction polish</span></div>
+                    <div class="task-card"><strong>Record demo clip</strong><span>Homepage asset</span></div>
+                  </div>
+                  <div class="board-column">
+                    <div class="column-title">Writing</div>
+                    <div class="task-card"><strong>Short release note</strong><span>Keep it human</span></div>
+                    <div class="task-card"><strong>Install guide</strong><span>First launch tip</span></div>
+                  </div>
+                  <div class="board-column">
+                    <div class="column-title">Done</div>
+                    <div class="task-card"><strong>Markdown toolbar</strong><span>Native shortcuts</span></div>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <div class="mock-app app-life">
+              <section class="mock-pane">
+                <h3 class="mock-title">Evening plan</h3>
+                <div class="calendar-grid">
+                  <div class="calendar-day">Mon</div>
+                  <div class="calendar-day active">Tue<span class="calendar-pill">Groceries<br>7:00 PM</span></div>
+                  <div class="calendar-day">Wed</div>
+                  <div class="calendar-day active">Thu<span class="calendar-pill">Dinner<br>8:30 PM</span></div>
+                  <div class="calendar-day">Fri</div>
+                </div>
+              </section>
+              <aside class="mock-right">
+                <div class="life-card">
+                  Small reminders belong near the thing you are already doing, then disappear when you leave.
+                </div>
+              </aside>
+            </div>
+
+            <div class="mock-app app-ideas">
+              <div class="gallery-toolbar">
+                <div class="mock-window-bar"></div>
+                <div class="search-field"></div>
+              </div>
+              <div class="gallery-grid">
+                <div class="idea-tile large"></div>
+                <div class="idea-tile blue"></div>
+                <div class="idea-tile"></div>
+                <div class="idea-tile pink"></div>
+                <div class="idea-tile"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="notch-stage" tabindex="0">
+            <div class="panel">
+              <div class="top-tools">
+                <div class="pager" aria-label="Tab controls">
+                  <button class="tool-button" type="button" aria-label="Remove tab"><i data-lucide="minus" class="icon"></i></button>
+                  <button class="dot active" type="button" data-tab="0" aria-label="Work tab"></button>
+                  <button class="dot" type="button" data-tab="1" aria-label="Life tab"></button>
+                  <button class="dot" type="button" data-tab="2" aria-label="Ideas tab"></button>
+                  <button class="tool-button" type="button" aria-label="New tab"><i data-lucide="plus" class="icon"></i></button>
+                </div>
+                <div class="icon-actions">
+                  <button class="tool-button" type="button" aria-label="Clear note">
+                    <i data-lucide="trash-2" class="icon"></i>
+                  </button>
+                  <button class="tool-button" type="button" aria-label="Settings">
+                    <i data-lucide="settings" class="icon"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="editor-card">
+                <div class="note-body" contenteditable="true" spellcheck="false" aria-label="Markdown note editor">
+                  <h2>Launch todos</h2>
+                  <ul class="check-list">
+                    <li><span class="checkmark done"></span><span>Trim the notch width by 2px.</span></li>
+                    <li><span class="checkmark done"></span><span>Keep the top edge flush with the screen.</span></li>
+                    <li><span class="checkmark"></span><span>Record a short homepage demo.</span></li>
+                  </ul>
+                </div>
+
+                <div class="toolbar-row">
+                  <div class="md-toolbar" aria-label="Markdown shortcut toolbar">
+                    <button class="tool-button" type="button" aria-label="Bold"><i data-lucide="bold" class="icon"></i></button>
+                    <button class="tool-button" type="button" aria-label="Italic"><i data-lucide="italic" class="icon"></i></button>
+                    <button class="tool-button" type="button" aria-label="Strikethrough"><i data-lucide="strikethrough" class="icon"></i></button>
+                    <button class="tool-button" type="button" aria-label="Inline code"><i data-lucide="code-2" class="icon"></i></button>
+                    <button class="tool-button" type="button" aria-label="Link"><i data-lucide="link" class="icon"></i></button>
+                    <button class="tool-button" type="button" aria-label="Quote"><i data-lucide="quote" class="icon"></i></button>
+                    <button class="tool-button" type="button" aria-label="Bulleted list"><i data-lucide="list" class="icon"></i></button>
+                    <button class="tool-button" type="button" aria-label="Numbered list"><i data-lucide="list-ordered" class="icon"></i></button>
+                    <button class="tool-button" type="button" aria-label="Todo list"><i data-lucide="list-checks" class="icon"></i></button>
+                  </div>
+                  <a class="credit-link" href="https://github.com/oil-oil" target="_blank" rel="noreferrer">Built by oil-oil</a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="demo-cursor" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M5 3l14 10.1-7.1 1.1-3.6 6.3L5 3Z" fill="currentColor"/>
+              <path d="M5 3l14 10.1-7.1 1.1-3.6 6.3L5 3Z" stroke="rgba(0,0,0,0.62)" stroke-width="1.2" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="base" aria-hidden="true"></div>
+      </section>
+
+      <p class="caption">Auto demo: hover the notch, capture a quick task, keep the current app in view.</p>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script>
+    const screenEl = document.getElementById("demoScreen");
+    const notch = screenEl.querySelector(".notch-stage");
+    const panel = screenEl.querySelector(".panel");
+    const noteBody = screenEl.querySelector(".note-body");
+    const tabDots = Array.from(screenEl.querySelectorAll(".dot[data-tab]"));
+    const clock = document.getElementById("clock");
+    let isManual = false;
+    let manualTimer;
+
+    const scenes = [
+      {
+        key: "todo",
+        cursor: "cursor-tab-0",
+        html: `
+          <h2>Launch todos</h2>
+          <ul class="check-list">
+            <li><span class="checkmark done"></span><span>Trim the notch width by 2px.</span></li>
+            <li><span class="checkmark done"></span><span>Keep the top edge flush with the screen.</span></li>
+            <li><span class="checkmark"></span><span>Record a short homepage demo.</span></li>
+          </ul>
+        `
+      },
+      {
+        key: "life",
+        cursor: "cursor-tab-1",
+        html: `
+          <h2>Tonight</h2>
+          <ul class="check-list">
+            <li><span class="checkmark done"></span><span>Pick up coffee beans on the way home.</span></li>
+            <li><span class="checkmark"></span><span>Book dinner for Thursday, 8:30 PM.</span></li>
+            <li><span class="checkmark"></span><span>Send the hiking list to Lin.</span></li>
+          </ul>
+          <p>Small life notes stay close without covering the app underneath.</p>
+        `
+      },
+      {
+        key: "ideas",
+        cursor: "cursor-tab-2",
+        html: `
+          <h2>Weekend sparks</h2>
+          <p>Collect tiny ideas while browsing, then turn the good ones into Markdown later.</p>
+          <ul>
+            <li>Try a softer homepage shadow.</li>
+            <li>Make the toolbar feel closer to a native app.</li>
+            <li>Keep the demo honest and compact.</li>
+          </ul>
+        `
+      }
+    ];
+
+    const cursorClasses = ["cursor-rest", "cursor-notch", "cursor-tab-0", "cursor-tab-1", "cursor-tab-2", "cursor-editor"];
+    const sleep = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+    const setOpen = (open) => {
+      screenEl.classList.toggle("is-open", open);
+    };
+
+    const setCursor = (state) => {
+      screenEl.classList.remove(...cursorClasses);
+      screenEl.classList.add(state);
+    };
+
+    const pulseCursor = () => {
+      screenEl.classList.remove("cursor-click");
+      window.requestAnimationFrame(() => {
+        screenEl.classList.add("cursor-click");
+      });
+    };
+
+    const renderScene = (index) => {
+      const scene = scenes[index];
+      screenEl.dataset.scene = scene.key;
+      noteBody.innerHTML = scene.html;
+      tabDots.forEach((dot, dotIndex) => {
+        dot.classList.toggle("active", dotIndex === index);
+      });
+    };
+
+    const pauseAutomation = () => {
+      isManual = true;
+      window.clearTimeout(manualTimer);
+      manualTimer = window.setTimeout(() => {
+        isManual = false;
+      }, 9000);
+    };
+
+    notch.addEventListener("click", () => {
+      pauseAutomation();
+      setCursor("cursor-notch");
+      setOpen(!screenEl.classList.contains("is-open"));
+    });
+
+    panel.addEventListener("click", (event) => {
+      event.stopPropagation();
+    });
+
+    tabDots.forEach((dot) => {
+      dot.addEventListener("click", () => {
+        const index = Number(dot.dataset.tab);
+        pauseAutomation();
+        renderScene(index);
+        setCursor(scenes[index].cursor);
+        setOpen(true);
+        window.setTimeout(pulseCursor, 760);
+      });
+    });
+
+    const waitIfManual = async () => {
+      while (isManual) {
+        await sleep(400);
+      }
+    };
+
+    const moveTo = async (cursorState) => {
+      setCursor(cursorState);
+      await sleep(820);
+    };
+
+    const clickAfterMove = async (cursorState) => {
+      await moveTo(cursorState);
+      pulseCursor();
+      await sleep(240);
+    };
+
+    const typeTodoLine = async (text) => {
+      const list = noteBody.querySelector(".check-list");
+      if (!list) {
+        return;
+      }
+
+      const item = document.createElement("li");
+      item.className = "typing-line";
+      item.innerHTML = `<span class="checkmark"></span><span class="typing-text"></span>`;
+      list.appendChild(item);
+
+      const target = item.querySelector(".typing-text");
+      for (const char of text) {
+        target.textContent += char;
+        await sleep(42);
+      }
+      await sleep(500);
+    };
+
+    const playDemoCycle = async () => {
+      await waitIfManual();
+      renderScene(0);
+      setOpen(false);
+      setCursor("cursor-rest");
+      await sleep(850);
+
+      await waitIfManual();
+      await moveTo("cursor-notch");
+      setOpen(true);
+      await sleep(720);
+
+      await waitIfManual();
+      await clickAfterMove("cursor-editor");
+      await typeTodoLine("Add release notes after signing.");
+      await sleep(650);
+
+      await waitIfManual();
+      await clickAfterMove("cursor-tab-1");
+      renderScene(1);
+      setOpen(true);
+      await sleep(1150);
+
+      await waitIfManual();
+      await clickAfterMove("cursor-tab-2");
+      renderScene(2);
+      setOpen(true);
+      await sleep(1150);
+
+      await waitIfManual();
+      setCursor("cursor-rest");
+      await sleep(780);
+      setOpen(false);
+      await sleep(950);
+    };
+
+    const startDemo = async () => {
+      while (true) {
+        await playDemoCycle();
+      }
+    };
+
+    const updateClock = () => {
+      const now = new Date();
+      clock.textContent = now.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+      });
+    };
+
+    renderScene(0);
+    setCursor("cursor-rest");
+    startDemo();
+    updateClock();
+    window.setInterval(updateClock, 30000);
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+  </script>
+</body>
+</html>
