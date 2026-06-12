@@ -16,12 +16,16 @@ struct NotebookView: View {
     @ObservedObject var editorInteractionState: EditorInteractionState
     let layout: NotchLayout
     let onOpenSettings: () -> Void
+    let onOpenColorPicker: () -> Void
+
+    private var theme: ThemeColor { settingsStore.themeColor }
 
     var body: some View {
         ZStack(alignment: .top) {
             drawer
         }
         .frame(width: layout.expandedSize.width, height: layout.expandedSize.height, alignment: .top)
+        .environment(\.themeIsLight, theme.isLight)
     }
 
     private var drawer: some View {
@@ -36,14 +40,14 @@ struct NotebookView: View {
             compactIcon
         }
         .frame(width: layout.expandedSize.width, height: layout.expandedSize.height, alignment: .top)
-        .background(Color(red: 0.02, green: 0.02, blue: 0.025).opacity(0.98))
+        .background(theme.panelBackground)
         .mask(alignment: .top) {
             TopAttachedRoundedShape(radius: cornerRadius)
                 .frame(width: revealWidth, height: revealHeight)
         }
         .overlay(alignment: .top) {
             TopAttachedRoundedShape(radius: cornerRadius)
-                .stroke(.white.opacity(0.09), lineWidth: 1)
+                .stroke(theme.borderColor, lineWidth: 1)
                 .frame(width: revealWidth, height: revealHeight)
         }
         .contentShape(Rectangle())
@@ -54,7 +58,7 @@ struct NotebookView: View {
         ZStack(alignment: .topTrailing) {
             VStack(spacing: 12) {
                 HStack(alignment: .center, spacing: 10) {
-                    TabPagerControl(store: store, editorInteractionState: editorInteractionState)
+                    TabPagerControl(store: store, editorInteractionState: editorInteractionState, theme: theme)
 
                     Spacer()
 
@@ -64,6 +68,13 @@ struct NotebookView: View {
                     }
                     .buttonStyle(DarkIconButtonStyle())
                     .help("Clear")
+
+                    Button(action: onOpenColorPicker) {
+                        Image(systemName: "paintpalette")
+                            .frame(width: 28, height: 28)
+                    }
+                    .buttonStyle(DarkIconButtonStyle())
+                    .help("Color")
 
                     Button(action: onOpenSettings) {
                         Image(systemName: "gearshape")
@@ -78,10 +89,17 @@ struct NotebookView: View {
                     store: store,
                     imageStore: imageStore,
                     editorInteractionState: editorInteractionState,
-                    size: editorSize
+                    size: editorSize,
+                    theme: theme
                 )
                 .frame(width: editorSize.width, height: editorSize.height)
-                .background(Color(red: 0.06, green: 0.06, blue: 0.07))
+                .background(theme.editorBackground)
+                .id("editor-\(theme.isLight)")
+                .onChange(of: theme.isLight) { _, switchedToLight in
+                    if switchedToLight {
+                        editorInteractionState.requestLayoutRefresh(resetScroll: false)
+                    }
+                }
             }
         }
         .padding(.top, toolbarTopPadding)
@@ -103,7 +121,7 @@ struct NotebookView: View {
     private var compactIcon: some View {
         Image(systemName: "note.text")
             .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(.white.opacity(0.82))
+            .foregroundStyle(theme.iconForeground)
             .frame(width: layout.compactSize.width, height: layout.compactSize.height)
             .opacity(1 - drawerState.revealProgress)
     }
@@ -162,6 +180,7 @@ struct MarkdownEditorPanel: View {
     let imageStore: LocalImageStore
     let editorInteractionState: EditorInteractionState
     let size: CGSize
+    let theme: ThemeColor
 
     private let toolbarHeight: CGFloat = 34
     private let separatorHeight: CGFloat = 1
@@ -171,17 +190,18 @@ struct MarkdownEditorPanel: View {
             MarkdownNoteEditor(
                 store: store,
                 imageStore: imageStore,
-                editorInteractionState: editorInteractionState
+                editorInteractionState: editorInteractionState,
+                theme: theme
             )
             .frame(width: size.width, height: editorHeight)
 
             Rectangle()
-                .fill(.white.opacity(0.045))
+                .fill(theme.separatorColor)
                 .frame(width: size.width, height: separatorHeight)
 
             MarkdownShortcutToolbar(editorInteractionState: editorInteractionState)
                 .frame(width: size.width, height: toolbarHeight)
-                .background(Color(red: 0.055, green: 0.055, blue: 0.065))
+                .background(theme.toolbarBackground)
         }
     }
 
@@ -244,6 +264,7 @@ struct MarkdownCommandLabel: View {
 struct TabPagerControl: View {
     @ObservedObject var store: NoteStore
     let editorInteractionState: EditorInteractionState
+    let theme: ThemeColor
     @Namespace private var tabAnimation
 
     var body: some View {
@@ -272,7 +293,7 @@ struct TabPagerControl: View {
                         }
                     } label: {
                         Capsule()
-                            .fill(isSelected ? Color.white.opacity(0.82) : Color.white.opacity(0.34))
+                            .fill(isSelected ? theme.activeTabDot : theme.inactiveTabDot)
                             .frame(width: isSelected ? 20 : 6, height: 6)
                             .frame(width: 26, height: 24)
                             .contentShape(Rectangle())
@@ -303,7 +324,7 @@ struct TabPagerControl: View {
         .padding(.horizontal, 2)
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(.white.opacity(0.045))
+                .fill(theme.tabPagerBackground)
         )
     }
 
@@ -319,17 +340,18 @@ struct TabPagerControl: View {
 
 struct CompactNotchView: View {
     let layout: NotchLayout
+    let theme: ThemeColor
 
     var body: some View {
         Image(systemName: "note.text")
             .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(.white.opacity(0.82))
+            .foregroundStyle(theme.iconForeground)
             .frame(width: layout.compactSize.width, height: layout.compactSize.height)
-            .background(Color(red: 0.02, green: 0.02, blue: 0.025).opacity(0.98))
+            .background(theme.panelBackground)
             .clipShape(TopAttachedRoundedShape(radius: 12))
             .overlay(
                 TopAttachedRoundedShape(radius: 12)
-                    .stroke(.white.opacity(0.09), lineWidth: 1)
+                    .stroke(theme.borderColor, lineWidth: 1)
             )
             .pointingHandCursor()
     }
@@ -339,6 +361,7 @@ struct MarkdownNoteEditor: View {
     @ObservedObject var store: NoteStore
     let imageStore: LocalImageStore
     let editorInteractionState: EditorInteractionState
+    let theme: ThemeColor
     @State private var isWikiLinkActive = false
     @State private var pendingInlineReplacement: InlineReplacementRequest?
 
@@ -360,6 +383,12 @@ struct MarkdownNoteEditor: View {
         .background {
             EditorFocusBinder(state: editorInteractionState)
         }
+        .onAppear {
+            // Restore cursor position after theme-change
+            // recreation (id-based refresh).
+            let range = store.selectionRange(for: store.activeTabID)
+            editorInteractionState.restoreSelection(range)
+        }
     }
 
     private func savePastedImage(_ pasteboard: NSPasteboard) -> String? {
@@ -367,24 +396,24 @@ struct MarkdownNoteEditor: View {
     }
 
     private var configuration: MarkdownEditorConfiguration {
-        let theme = MarkdownEditorTheme(
-            bodyText: NSColor(white: 0.92, alpha: 1),
-            mutedText: NSColor(white: 0.58, alpha: 1),
-            disabledText: NSColor(white: 0.38, alpha: 1),
-            headingMarker: NSColor(white: 0.44, alpha: 1),
+        let editorTheme = MarkdownEditorTheme(
+            bodyText: theme.editorBodyText,
+            mutedText: theme.editorMutedText,
+            disabledText: theme.editorDisabledText,
+            headingMarker: theme.editorHeadingMarker,
             link: NSColor.systemBlue,
             incompleteLink: NSColor.systemBlue.withAlphaComponent(0.75),
             findMatchHighlight: NSColor.systemYellow.withAlphaComponent(0.55),
             findCurrentMatchHighlight: NSColor.systemYellow,
             latexLightModeText: .white,
             latexDarkModeText: .white,
-            strikethroughColor: NSColor(white: 0.62, alpha: 1)
+            strikethroughColor: theme.editorStrikethrough
         )
 
         let services = MarkdownEditorServices(images: imageStore)
 
         return MarkdownEditorConfiguration(
-            theme: theme,
+            theme: editorTheme,
             services: services,
             lists: ListStyle(indentPerLevel: 18, extraLineHeight: 1),
             imageEmbed: ImageEmbedStyle(fallbackMaxWidth: 440, paragraphSpacing: 6, imageGap: 6),
@@ -497,6 +526,7 @@ private struct RoundedHoverButtonBody: View {
     let pressedForegroundOpacity: CGFloat
 
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.themeIsLight) private var themeIsLight
     @State private var isHovering = false
 
     init(
@@ -521,13 +551,23 @@ private struct RoundedHoverButtonBody: View {
         self.pressedForegroundOpacity = pressedForegroundOpacity
     }
 
+    /// Tint color — white on dark themes, black on light themes.
+    private var tint: Color {
+        themeIsLight ? .black : .white
+    }
+
+    /// Light-mode opacity scale factor to keep hover/press states visible.
+    private var opacityScale: CGFloat {
+        themeIsLight ? 1.35 : 1.0
+    }
+
     var body: some View {
         configuration.label
             .font(font)
-            .foregroundStyle(.white.opacity(currentForegroundOpacity))
+            .foregroundStyle(tint.opacity(currentForegroundOpacity * opacityScale))
             .background(
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .fill(.white.opacity(currentBackgroundOpacity))
+                    .fill(tint.opacity(currentBackgroundOpacity * opacityScale))
             )
             .animation(.easeOut(duration: 0.10), value: isHovering)
             .animation(.easeOut(duration: 0.08), value: configuration.isPressed)

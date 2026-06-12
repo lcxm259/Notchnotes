@@ -34,10 +34,26 @@ final class AppSettingsStore: ObservableObject {
         }
     }
 
+    @Published var themeColor: ThemeColor {
+        didSet {
+            if let data = try? JSONEncoder().encode(themeColor) {
+                UserDefaults.standard.set(data, forKey: Self.themeColorKey)
+            }
+        }
+    }
+
     private static let triggerModeKey = "notchNotes.triggerMode"
+    private static let themeColorKey = "notchNotes.themeColor"
 
     init() {
         let rawMode = UserDefaults.standard.string(forKey: Self.triggerModeKey)
         triggerMode = rawMode.flatMap(TriggerMode.init(rawValue:)) ?? .hover
+
+        if let data = UserDefaults.standard.data(forKey: Self.themeColorKey),
+           let color = try? JSONDecoder().decode(ThemeColor.self, from: data) {
+            themeColor = color
+        } else {
+            themeColor = .dark
+        }
     }
 }

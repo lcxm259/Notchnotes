@@ -32,6 +32,7 @@ final class NotchPanelController: NSObject {
     private let drawerState = DrawerState()
     private let editorInteractionState = EditorInteractionState()
     private lazy var settingsPopoverController = SettingsPopoverController(settingsStore: settingsStore)
+    private lazy var colorPopoverController = ColorPopoverController(settingsStore: settingsStore)
     private let hotPanel: NotchPanel
     private let drawerPanel: NotchPanel
     private var hostingView: NSHostingView<NotebookView>?
@@ -110,6 +111,7 @@ final class NotchPanelController: NSObject {
             store.updateSelection(for: store.activeTabID, range: range)
         }
         settingsPopoverController.close(animated: false)
+        colorPopoverController.close(animated: false)
         isExpanded = false
         setDrawerExpanded(false, animated: animated)
         let delay: TimeInterval = animated ? 0.18 : 0
@@ -139,7 +141,7 @@ final class NotchPanelController: NSObject {
     private func rebuildContent(layout: NotchLayout? = nil) {
         let layout = layout ?? currentLayout()
         cachedLayout = layout
-        let hotView = CompactNotchView(layout: layout)
+        let hotView = CompactNotchView(layout: layout, theme: settingsStore.themeColor)
         let view = NotebookView(
             store: store,
             settingsStore: settingsStore,
@@ -147,7 +149,8 @@ final class NotchPanelController: NSObject {
             drawerState: drawerState,
             editorInteractionState: editorInteractionState,
             layout: layout,
-            onOpenSettings: { [weak self] in self?.openSettingsPopover() }
+            onOpenSettings: { [weak self] in self?.openSettingsPopover() },
+            onOpenColorPicker: { [weak self] in self?.openColorPopover() }
         )
 
         if let hotHostingView {
@@ -339,11 +342,17 @@ final class NotchPanelController: NSObject {
         return drawerPanel.frame.insetBy(dx: -margin, dy: -margin).contains(point)
             || activationFrame().contains(point)
             || settingsPopoverController.contains(point)
+            || colorPopoverController.contains(point)
     }
 
     private func openSettingsPopover() {
         cancelCollapse()
         settingsPopoverController.show(relativeTo: drawerPanel)
+    }
+
+    private func openColorPopover() {
+        cancelCollapse()
+        colorPopoverController.show(relativeTo: drawerPanel)
     }
 
     private func currentLayout() -> NotchLayout {
