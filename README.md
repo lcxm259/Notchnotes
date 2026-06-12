@@ -3,6 +3,5 @@
 
 
 oil源仓库地址
-- [Download the latest release](https://github.com/oil-oil/NotchNotes/releases/latest)
 - [Open the homepage](https://oil-oil.github.io/NotchNotes/)
 
