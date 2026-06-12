@@ -215,9 +215,13 @@ extension NativeTextViewCoordinator {
 
         let shouldSkipSelectionRestyle = pendingEditedRange != nil
         let tokensChanged = activeTokenIndices != prevActive
+        let caretParagraphChanged = previousCaretLocation.map { prevLoc in
+            let prevPara = nsText.paragraphRange(for: NSRange(location: min(prevLoc, nsText.length), length: 0))
+            return prevPara != paragraphRange
+        } ?? false
         if shouldSkipSelectionRestyle {
             // textDidChange performs the pending restyle for this edit cycle.
-        } else if tokensChanged {
+        } else if tokensChanged || caretParagraphChanged {
             restyleTextView(tv, paragraphCandidates: paragraphCandidates, tokens: tokens)
         }
 

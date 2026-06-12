@@ -363,8 +363,9 @@ final class MarkdownTextLayoutFragment: NSTextLayoutFragment {
                 yRadius: max(3, size * 0.28)
             )
 
+            let theme = configuration.theme
             if isChecked {
-                NSColor(calibratedRed: 0.69, green: 0.93, blue: 0.81, alpha: 1.0).setFill()
+                theme.checkboxCheckedFill.setFill()
                 checkboxPath.fill()
 
                 let checkPath = NSBezierPath()
@@ -374,12 +375,12 @@ final class MarkdownTextLayoutFragment: NSTextLayoutFragment {
                 checkPath.move(to: CGPoint(x: boxRect.minX + size * 0.26, y: boxRect.midY + size * 0.02))
                 checkPath.line(to: CGPoint(x: boxRect.minX + size * 0.43, y: boxRect.maxY - size * 0.27))
                 checkPath.line(to: CGPoint(x: boxRect.maxX - size * 0.22, y: boxRect.minY + size * 0.30))
-                NSColor(calibratedRed: 0.06, green: 0.07, blue: 0.08, alpha: 1.0).setStroke()
+                theme.checkboxCheckMark.setStroke()
                 checkPath.stroke()
             } else {
-                NSColor(white: 1.0, alpha: 0.035).setFill()
+                theme.checkboxUncheckedFill.setFill()
                 checkboxPath.fill()
-                NSColor(white: 1.0, alpha: 0.30).setStroke()
+                theme.checkboxUncheckedStroke.setStroke()
                 checkboxPath.lineWidth = 1
                 checkboxPath.stroke()
             }

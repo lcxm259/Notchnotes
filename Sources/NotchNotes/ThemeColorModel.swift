@@ -146,6 +146,10 @@ struct ThemeColor: Codable, Equatable {
         NSColor(white: isLight ? 0.45 : 0.62, alpha: 1)
     }
 
+    var editorCheckboxUncheckedStroke: NSColor {
+        NSColor(white: isLight ? 0.50 : 0.48, alpha: 1)
+    }
+
     // MARK: - Presets
 
     static let dark = ThemeColor(red: 0.02, green: 0.02, blue: 0.025)

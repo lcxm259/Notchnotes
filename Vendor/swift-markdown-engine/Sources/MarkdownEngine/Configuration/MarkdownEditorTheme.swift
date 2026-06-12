@@ -74,6 +74,17 @@ public struct MarkdownEditorTheme: Sendable {
     /// (e.g. completed task list items, horizontal rules).
     public var strikethroughColor: NSColor
 
+    // MARK: Task checkboxes
+
+    /// Fill color for an unchecked `- [ ]` checkbox glyph.
+    public var checkboxUncheckedFill: NSColor
+    /// Stroke / border color for an unchecked `- [ ]` checkbox glyph.
+    public var checkboxUncheckedStroke: NSColor
+    /// Fill color for a checked `- [x]` checkbox glyph.
+    public var checkboxCheckedFill: NSColor
+    /// Stroke color for the check mark inside a checked checkbox.
+    public var checkboxCheckMark: NSColor
+
     // MARK: Init
 
     public init(
@@ -87,7 +98,11 @@ public struct MarkdownEditorTheme: Sendable {
         findCurrentMatchHighlight: NSColor = .systemYellow,
         latexLightModeText: NSColor = .black,
         latexDarkModeText: NSColor = .white,
-        strikethroughColor: NSColor = .labelColor
+        strikethroughColor: NSColor = .labelColor,
+        checkboxUncheckedFill: NSColor = .clear,
+        checkboxUncheckedStroke: NSColor = .secondaryLabelColor,
+        checkboxCheckedFill: NSColor = .systemGreen,
+        checkboxCheckMark: NSColor = .white
     ) {
         self.bodyText = bodyText
         self.mutedText = mutedText
@@ -100,6 +115,10 @@ public struct MarkdownEditorTheme: Sendable {
         self.latexLightModeText = latexLightModeText
         self.latexDarkModeText = latexDarkModeText
         self.strikethroughColor = strikethroughColor
+        self.checkboxUncheckedFill = checkboxUncheckedFill
+        self.checkboxUncheckedStroke = checkboxUncheckedStroke
+        self.checkboxCheckedFill = checkboxCheckedFill
+        self.checkboxCheckMark = checkboxCheckMark
     }
 
     /// System-native palette built from `NSColor` dynamic system colors.

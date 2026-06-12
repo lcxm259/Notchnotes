@@ -407,7 +407,8 @@ struct MarkdownNoteEditor: View {
             findCurrentMatchHighlight: NSColor.systemYellow,
             latexLightModeText: .white,
             latexDarkModeText: .white,
-            strikethroughColor: theme.editorStrikethrough
+            strikethroughColor: theme.editorStrikethrough,
+            checkboxUncheckedStroke: theme.editorCheckboxUncheckedStroke
         )
 
         let services = MarkdownEditorServices(images: imageStore)

@@ -88,6 +88,17 @@ struct TextStylingService {
             layoutBridge?.removeTemporaryAttribute(.spellingState, forCharacterRange: disabledRange)
         }
 
+        // Save direct user-applied strikethrough before base-attr reset wipes it.
+        var savedStrikethrough: [(NSRange, NSColor)] = []
+        for paragraph in paragraphs {
+            textView.textStorage?.enumerateAttribute(.strikethroughStyle, in: paragraph, options: []) { value, range, _ in
+                guard value != nil else { return }
+                let color = textView.textStorage?.attribute(.strikethroughColor, at: range.location, effectiveRange: nil) as? NSColor
+                    ?? configuration.theme.strikethroughColor
+                savedStrikethrough.append((range, color))
+            }
+        }
+
         textView.textStorage?.beginEditing()
         for disabledRange in spellingDisabledRanges {
             textView.textStorage?.addAttribute(.spellingState, value: 0, range: disabledRange)
@@ -104,6 +115,18 @@ struct TextStylingService {
                 for (key, value) in attrs {
                     textView.textStorage?.addAttribute(key, value: value, range: clippedRange)
                 }
+            }
+        }
+        // Restore direct user-applied strikethrough that was wiped by setAttributes,
+        // but only on ranges that didn't already get strikethrough from markdown syntax.
+        for (savedRange, color) in savedStrikethrough {
+            var hasStrikethrough = false
+            textView.textStorage?.enumerateAttribute(.strikethroughStyle, in: savedRange, options: []) { value, _, stop in
+                if value != nil { hasStrikethrough = true; stop.pointee = true }
+            }
+            if !hasStrikethrough {
+                textView.textStorage?.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: savedRange)
+                textView.textStorage?.addAttribute(.strikethroughColor, value: color, range: savedRange)
             }
         }
         textView.textStorage?.endEditing()

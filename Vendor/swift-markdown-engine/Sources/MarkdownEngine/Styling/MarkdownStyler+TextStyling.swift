@@ -57,18 +57,15 @@ extension MarkdownStyler {
         let italicBit: UInt8 = 2
 
         for token in ctx.tokens {
-            let mask: UInt8
             switch token.kind {
-            case .bold: mask = boldBit
-            case .italic: mask = italicBit
-            case .boldItalic: mask = boldBit | italicBit
-            default: continue
-            }
-            if MarkdownDetection.isInsideCodeBlock(range: token.range, codeTokens: ctx.codeTokens) { continue }
-            let r = token.contentRange
-            let upper = min(r.location + r.length, len)
-            for i in max(r.location, 0)..<upper {
-                traits[i] |= mask
+            case .bold:
+                applyTrait(mask: boldBit, token: token, ctx: ctx, traits: &traits)
+            case .italic:
+                applyTrait(mask: italicBit, token: token, ctx: ctx, traits: &traits)
+            case .boldItalic:
+                applyTrait(mask: boldBit | italicBit, token: token, ctx: ctx, traits: &traits)
+            default:
+                continue
             }
         }
 
@@ -95,7 +92,31 @@ extension MarkdownStyler {
             attrs.append((range, [.font: font]))
             i = j
         }
+
+        // Striktethrough: apply strikethrough style to content ranges of ~~ tokens.
+        for token in ctx.tokens where token.kind == .strikethrough {
+            if MarkdownDetection.isInsideCodeBlock(range: token.range, codeTokens: ctx.codeTokens) { continue }
+            let r = token.contentRange
+            let upper = min(r.location + r.length, len)
+            let range = NSRange(location: max(r.location, 0), length: max(0, upper - max(r.location, 0)))
+            if range.length > 0 {
+                attrs.append((range, [
+                    .strikethroughStyle: NSUnderlineStyle.single.rawValue,
+                    .strikethroughColor: ctx.configuration.theme.strikethroughColor
+                ]))
+            }
+        }
+
         return attrs
+    }
+
+    private static func applyTrait(mask: UInt8, token: MarkdownToken, ctx: StylingContext, traits: inout [UInt8]) {
+        if MarkdownDetection.isInsideCodeBlock(range: token.range, codeTokens: ctx.codeTokens) { return }
+        let r = token.contentRange
+        let upper = min(r.location + r.length, traits.count)
+        for i in max(r.location, 0)..<upper {
+            traits[i] |= mask
+        }
     }
 
     private static func boldFont(in ctx: StylingContext) -> NSFont {

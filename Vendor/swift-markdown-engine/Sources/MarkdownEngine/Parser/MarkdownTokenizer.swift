@@ -57,6 +57,9 @@ enum MarkdownTokenizer {
         // Emphasis via stack parser.
         tokens.append(contentsOf: parseEmphasisTokens(in: text))
 
+        // Strikethrough ~~text~~
+        tokens.append(contentsOf: parseStrikethroughTokens(in: text))
+
         // Image embeds ![[Name]] (must be parsed before wikiLinks)
         var imageEmbedRanges: [NSRange] = []
         for match in imageEmbedRegex.matches(in: text, options: [], range: fullRange) {

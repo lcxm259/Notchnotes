@@ -118,7 +118,7 @@ final class EditorInteractionState: ObservableObject {
         case .italic:
             wrapSelection(prefix: "*", suffix: "*", placeholder: "italic", in: textView)
         case .strikethrough:
-            wrapSelection(prefix: "~~", suffix: "~~", placeholder: "strikethrough", in: textView)
+            toggleStrikethrough(in: textView)
         case .inlineCode:
             wrapSelection(prefix: "`", suffix: "`", placeholder: "code", in: textView)
         case .link:
@@ -213,6 +213,21 @@ final class EditorInteractionState: ObservableObject {
         let replacement = prefix + content + suffix
         let selection = NSRange(location: range.location + prefix.utf16.count, length: content.utf16.count)
         replaceText(in: textView, range: range, with: replacement, selectionAfter: selection)
+    }
+
+    private func toggleStrikethrough(in textView: NSTextView) {
+        let range = safeSelectedRange(in: textView)
+        guard range.length > 0 else { return }
+        let storage = textView.textStorage
+        let existing = storage?.attribute(.strikethroughStyle, at: range.location, effectiveRange: nil) as? Int
+        if existing != nil {
+            storage?.removeAttribute(.strikethroughStyle, range: range)
+            storage?.removeAttribute(.strikethroughColor, range: range)
+        } else {
+            storage?.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: range)
+            storage?.addAttribute(.strikethroughColor, value: NSColor.labelColor, range: range)
+        }
+        textView.setSelectedRange(range)
     }
 
     private func applyLink(in textView: NSTextView) {
